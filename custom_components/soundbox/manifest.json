@@ -6,6 +6,7 @@
   ],
   "config_flow": true,
   "dependencies": [
+    "media_source",
     "my"
   ],
   "documentation": "https://github.com/birniger/soundbox-home-assistant",

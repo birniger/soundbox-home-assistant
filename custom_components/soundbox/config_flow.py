@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import config_entry_oauth2_flow
 

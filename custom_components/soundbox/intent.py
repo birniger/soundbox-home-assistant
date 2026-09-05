@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from typing import Any, Awaitable, Callable
 
-from homeassistant import intent
+from homeassistant.helpers import intent
 from homeassistant.core import HomeAssistant, HomeAssistantError
 from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er
 

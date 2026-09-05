@@ -13,7 +13,11 @@ from homeassistant.exceptions import (
     ConfigEntryNotReady,
     HomeAssistantError,
 )
-from homeassistant.helpers import config_entry_oauth2_flow, config_validation as cv, intent
+from homeassistant.helpers import config_entry_oauth2_flow, config_validation as cv
+# Aliased: `from .intent import ...` below binds this package's own intent
+# module onto the package namespace, which silently replaced the helper of
+# the same name and made async_register vanish at setup time.
+from homeassistant.helpers import intent as intent_helper
 
 from .api import SoundboxApi, SoundboxApiError
 from .const import AUTHORIZE_URL, CLIENT_ID, DOMAIN, TOKEN_URL
@@ -29,6 +33,9 @@ ATTR_ENTITY_ID = "entity_id"
 ATTR_MODE = "mode"
 ATTR_STATION_ID = "station_id"
 ATTR_VALUE = "value"
+
+
+type SoundboxConfigEntry = ConfigEntry[SoundboxRuntime]
 
 
 @dataclass
@@ -62,19 +69,33 @@ STEP_SCHEMA = vol.Schema(
 )
 
 
+def loaded_entries(hass: HomeAssistant) -> list[SoundboxConfigEntry]:
+    """Every Soundbox account that is currently connected."""
+    return hass.config_entries.async_loaded_entries(DOMAIN)
+
+
 def _runtime_for_call(hass: HomeAssistant, call: ServiceCall) -> SoundboxRuntime:
-    runtimes: dict[str, SoundboxRuntime] = hass.data.get(DOMAIN, {})
+    entries = loaded_entries(hass)
     requested = call.data.get(ATTR_CONFIG_ENTRY_ID)
     if requested:
-        runtime = runtimes.get(requested)
-        if runtime:
-            return runtime
+        for entry in entries:
+            if entry.entry_id == requested:
+                return entry.runtime_data
         raise HomeAssistantError("That Soundbox account is not connected.")
-    if len(runtimes) == 1:
-        return next(iter(runtimes.values()))
-    if not runtimes:
+    if len(entries) == 1:
+        return entries[0].runtime_data
+    if not entries:
         raise HomeAssistantError("Connect a Soundbox account before using this action.")
     raise HomeAssistantError("Choose which Soundbox account this action should use.")
+
+
+def _only_runtime(hass: HomeAssistant) -> SoundboxRuntime:
+    """A spoken sentence has no room to name an account, so Assist needs there
+    to be exactly one and says so plainly when there is not."""
+    entries = loaded_entries(hass)
+    if len(entries) != 1:
+        raise HomeAssistantError("Choose a Soundbox account in the dashboard first.")
+    return entries[0].runtime_data
 
 
 async def _soundbox_call(request: Awaitable[Any]) -> Any:
@@ -136,6 +157,17 @@ async def _step(
     picked = await _soundbox_call(runtime.api.pick(
         str(session.get("mode_id") or "smart"), str(station_id), direction
     ))
+    # Stepping is choosing and then playing. This return belonged to _save_song
+    # for a while, where `picked` and `hass` do not exist: next and previous
+    # chose a station and never played it, and saving a song raised NameError
+    # after the song had already been saved.
+    return await _play(
+        hass,
+        runtime,
+        target,
+        station_id=str(picked["station"]["id"]),
+        session_mode=str(session.get("mode_id") or "smart"),
+    )
 
 
 async def _save_song(runtime: SoundboxRuntime, target: str) -> None:
@@ -148,13 +180,6 @@ async def _save_song(runtime: SoundboxRuntime, target: str) -> None:
     if not station_id:
         raise HomeAssistantError("Start Soundbox on this speaker first.")
     await _soundbox_call(runtime.api.save_song(str(station_id)))
-    return await _play(
-        hass,
-        runtime,
-        target,
-        station_id=str(picked["station"]["id"]),
-        session_mode=str(session.get("mode_id") or "smart"),
-    )
 
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
@@ -203,47 +228,33 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     hass.services.async_register(DOMAIN, "save_song", save_song, schema=STEP_SCHEMA)
 
     async def play_for_assist(target: str, station_id: str | None = None, mode: str | None = None) -> str:
-        runtimes = hass.data.get(DOMAIN, {})
-        if len(runtimes) != 1:
-            raise HomeAssistantError("Choose a Soundbox account in the dashboard first.")
-        return await _play(hass, next(iter(runtimes.values())), target, station_id, mode)
+        return await _play(hass, _only_runtime(hass), target, station_id, mode)
 
     async def step_for_assist(target: str, direction: str) -> str:
-        runtimes = hass.data.get(DOMAIN, {})
-        if len(runtimes) != 1:
-            raise HomeAssistantError("Choose a Soundbox account in the dashboard first.")
-        return await _step(hass, next(iter(runtimes.values())), target, direction)
+        return await _step(hass, _only_runtime(hass), target, direction)
 
     async def library_for_assist() -> dict[str, Any]:
-        runtimes = hass.data.get(DOMAIN, {})
-        if len(runtimes) != 1:
-            raise HomeAssistantError("Choose a Soundbox account in the dashboard first.")
-        return await _soundbox_call(next(iter(runtimes.values())).api.library())
+        return await _soundbox_call(_only_runtime(hass).api.library())
 
     async def feedback_for_assist(target: str, value: str) -> None:
-        runtimes = hass.data.get(DOMAIN, {})
-        if len(runtimes) != 1:
-            raise HomeAssistantError("Choose a Soundbox account in the dashboard first.")
-        session_id = next(iter(runtimes.values())).sessions.get(target)
+        runtime = _only_runtime(hass)
+        session_id = runtime.sessions.get(target)
         if not session_id:
             raise HomeAssistantError("Start Soundbox on this speaker first.")
-        await _soundbox_call(next(iter(runtimes.values())).api.feedback(session_id, value))
+        await _soundbox_call(runtime.api.feedback(session_id, value))
 
     async def save_for_assist(target: str) -> None:
-        runtimes = hass.data.get(DOMAIN, {})
-        if len(runtimes) != 1:
-            raise HomeAssistantError("Choose a Soundbox account in the dashboard first.")
-        await _save_song(next(iter(runtimes.values())), target)
+        await _save_song(_only_runtime(hass), target)
 
-    intent.async_register(hass, SoundboxPlayIntent(hass, play_for_assist, library_for_assist))
-    intent.async_register(hass, SoundboxNextIntent(hass, step_for_assist, "next"))
-    intent.async_register(hass, SoundboxNextIntent(hass, step_for_assist, "previous"))
-    intent.async_register(hass, SoundboxFeedbackIntent(hass, feedback_for_assist))
-    intent.async_register(hass, SoundboxSaveIntent(hass, save_for_assist))
+    intent_helper.async_register(hass, SoundboxPlayIntent(hass, play_for_assist, library_for_assist))
+    intent_helper.async_register(hass, SoundboxNextIntent(hass, step_for_assist, "next"))
+    intent_helper.async_register(hass, SoundboxNextIntent(hass, step_for_assist, "previous"))
+    intent_helper.async_register(hass, SoundboxFeedbackIntent(hass, feedback_for_assist))
+    intent_helper.async_register(hass, SoundboxSaveIntent(hass, save_for_assist))
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: SoundboxConfigEntry) -> bool:
     """Validate the account and keep its OAuth session available to actions."""
     implementation = await config_entry_oauth2_flow.async_get_config_entry_implementation(
         hass, entry
@@ -255,11 +266,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if err.status == 401:
             raise ConfigEntryAuthFailed from err
         raise ConfigEntryNotReady("Soundbox is unavailable") from err
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = SoundboxRuntime(api=api)
+    entry.runtime_data = SoundboxRuntime(api=api)
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Remove account state; global actions stay available with useful errors."""
-    hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+async def async_unload_entry(hass: HomeAssistant, entry: SoundboxConfigEntry) -> bool:
+    """The runtime travels with the entry, so unloading it is enough. The
+    actions stay registered on purpose: they are global, and one that is still
+    there can explain that no account is connected."""
     return True

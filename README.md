@@ -6,6 +6,9 @@ pretends to be a speaker itself.
 
 ## What it does
 
+- Browse your stations from **Media** in the Home Assistant sidebar, and play
+  any of them on any media player. Soundbox appears as a media source, so
+  the speaker fetches the stream itself.
 - Browse saved stations, favourites, tags, cities, and Soundbox radio modes.
 - Play a named station or Smart, Morning, Night, Local, Favorites, Ordered, or
   Explore Radio on any Home Assistant media player.
@@ -51,6 +54,21 @@ playback timing. It does not receive Home Assistant room names, speaker names,
 or home state. Station source URLs are never returned to Home Assistant.
 
 ## Development
+
+Tests run against a real Home Assistant using
+[`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component):
+
+```bash
+python3.14 -m venv .venv
+.venv/bin/pip install -r requirements_test.txt
+.venv/bin/pytest tests -q --cov=custom_components.soundbox
+```
+
+The config flow is covered end to end, which is what the Home Assistant quality
+scale asks for at Bronze; `custom_components/soundbox/quality_scale.yaml`
+records where every Bronze rule stands.
+
+## Notes
 
 The integration lives at `custom_components/soundbox`. Run Home Assistant's
 standard integration tests with a development checkout of Home Assistant.
