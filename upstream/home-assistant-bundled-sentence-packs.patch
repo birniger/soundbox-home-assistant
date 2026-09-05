@@ -1,0 +1,165 @@
+diff --git a/homeassistant/components/conversation/__init__.py b/homeassistant/components/conversation/__init__.py
+index f596838a..74dfd659 100644
+--- a/homeassistant/components/conversation/__init__.py
++++ b/homeassistant/components/conversation/__init__.py
+@@ -2,6 +2,7 @@
+ 
+ from collections.abc import Callable
+ import logging
++from pathlib import Path
+ from typing import Any, Literal
+ 
+ from hassil.recognize import RecognizeResult
+@@ -55,7 +56,7 @@ from .const import (
+     SERVICE_PROCESS,
+     ConversationEntityFeature,
+ )
+-from .default_agent import async_setup_default_agent
++from .default_agent import DefaultAgent, async_setup_default_agent
+ from .entity import ConversationEntity
+ from .http import async_setup as async_setup_conversation_http
+ from .models import AbstractConversationAgent, ConversationInput, ConversationResult
+@@ -85,12 +86,27 @@ __all__ = [
+     "async_get_agent_info",
+     "async_get_chat_log",
+     "async_get_result_from_chat_log",
++    "async_register_sentence_pack",
+     "async_set_agent",
+     "async_unset_agent",
+ ]
+ 
+ _LOGGER = logging.getLogger(__name__)
+ 
++
++async def async_register_sentence_pack(hass: HomeAssistant, sentence_dir: Path) -> None:
++    """Register sentence YAML shipped by an installed integration.
++
++    The integration explicitly opts in from ``async_setup``. Its phrases stay
++    distinct from user-managed ``custom_sentences``, and no integration needs
++    to write to the user's configuration directory.
++    """
++    agent = get_agent_manager(hass).default_agent
++    if not isinstance(agent, DefaultAgent):
++        raise TypeError("The default Home Assistant conversation agent is unavailable")
++    await agent.async_register_sentence_pack(sentence_dir)
++
++
+ SERVICE_PROCESS_SCHEMA = vol.Schema(
+     {
+         vol.Required(ATTR_TEXT): cv.string,
+diff --git a/homeassistant/components/conversation/default_agent.py b/homeassistant/components/conversation/default_agent.py
+index 63970bef..68f9b784 100644
+--- a/homeassistant/components/conversation/default_agent.py
++++ b/homeassistant/components/conversation/default_agent.py
+@@ -243,6 +243,7 @@ class DefaultAgent(ConversationEntity):
+ 
+         self._lang_intents: dict[str, LanguageIntents | object] = {}
+         self._load_intents_lock = asyncio.Lock()
++        self._sentence_packs: set[Path] = set()
+ 
+         # Intents from common conversation config
+         self._config_intents_config: IntentSourceConfig = {}
+@@ -1176,6 +1177,14 @@ class DefaultAgent(ConversationEntity):
+         # Intents have changed, so we must clear the cache
+         self._intent_cache.clear()
+ 
++    async def async_register_sentence_pack(self, sentence_dir: Path) -> None:
++        """Add an integration-owned sentence directory and reload its grammar."""
++        resolved = sentence_dir.resolve()
++        if resolved in self._sentence_packs:
++            return
++        self._sentence_packs.add(resolved)
++        await self.async_reload()
++
+     @override
+     async def async_prepare(self, language: str | None = None) -> None:
+         """Load intents for a language."""
+@@ -1258,6 +1267,40 @@ class DefaultAgent(ConversationEntity):
+                 language_variant,
+             )
+ 
++        # An integration can explicitly offer its own grammar. It is loaded
++        # after the built-ins but before user configuration, so a person's
++        # custom_sentences file always has the final say.
++        for sentence_root in self._sentence_packs:
++            sentence_dir = sentence_root / language_variant
++            if not sentence_dir.is_dir():
++                continue
++            for sentence_path in sentence_dir.rglob("*.yaml"):
++                with sentence_path.open(encoding="utf-8") as sentence_file:
++                    if not isinstance(
++                        sentence_yaml := yaml.safe_load(sentence_file), dict
++                    ):
++                        _LOGGER.warning(
++                            "Integration sentence pack file does not match expected format path=%s",
++                            sentence_path,
++                        )
++                        continue
++
++                    pack_intents = sentence_yaml.get("intents", {})
++                    for intent_dict in pack_intents.values():
++                        for intent_data in intent_dict.get("data", []):
++                            sentence_metadata = intent_data.get("metadata", {})
++                            sentence_metadata[METADATA_CUSTOM_SENTENCE] = True
++                            sentence_metadata[METADATA_CUSTOM_FILE] = str(sentence_path)
++                            intent_data["metadata"] = sentence_metadata
++
++                    merge_dict(intents_dict, sentence_yaml)
++
++                _LOGGER.debug(
++                    "Loaded integration sentence pack language=%s, path=%s",
++                    language,
++                    sentence_path,
++                )
++
+         # Check for custom sentences in <config>/custom_sentences/<language>/
+         custom_sentences_dir = Path(
+             self.hass.config.path("custom_sentences", language_variant)
+diff --git a/tests/components/conversation/test_default_agent.py b/tests/components/conversation/test_default_agent.py
+index e4dd8c21..6f5a675d 100644
+--- a/tests/components/conversation/test_default_agent.py
++++ b/tests/components/conversation/test_default_agent.py
+@@ -2,6 +2,7 @@
+ 
+ from collections import defaultdict
+ import os
++from pathlib import Path
+ import tempfile
+ from typing import Any
+ from unittest.mock import AsyncMock, patch
+@@ -2635,6 +2636,35 @@ async def test_custom_sentences(
+         )
+ 
+ 
++@pytest.mark.usefixtures("init_components")
++async def test_registered_sentence_pack(hass: HomeAssistant, tmp_path: Path) -> None:
++    """An integration can ship grammar without writing user configuration."""
++    sentence_dir = tmp_path / "sentences" / "en"
++    sentence_dir.mkdir(parents=True)
++    (sentence_dir / "order.yaml").write_text(
++        """language: en
++intents:
++  OrderBeer:
++    data:
++      - sentences:
++          - order a bundled {beer_style}
++lists:
++  beer_style:
++    values:
++      - stout
++""",
++        encoding="utf-8",
++    )
++    intent.async_register(hass, OrderBeerIntentHandler())
++    await conversation.async_register_sentence_pack(hass, sentence_dir.parent)
++
++    result = await conversation.async_converse(
++        hass, "order a bundled stout", None, Context(), language="en"
++    )
++    assert result.response.response_type is intent.IntentResponseType.ACTION_DONE
++    assert result.response.speech["plain"]["speech"] == "You ordered a stout"
++
++
+ async def test_custom_sentences_config(
+     hass: HomeAssistant,
+     snapshot: SnapshotAssertion,

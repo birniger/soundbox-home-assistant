@@ -1,0 +1,31 @@
+language: "de"
+intents:
+  SoundboxPlay:
+    data:
+      - sentences:
+          - "spiele {query} [in {area}]"
+  SoundboxNext:
+    data:
+      - sentences:
+          - "nächster Soundbox sender [in {area}]"
+  SoundboxPrevious:
+    data:
+      - sentences:
+          - "vorheriger Soundbox sender [in {area}]"
+  SoundboxFeedback:
+    data:
+      - sentences:
+          - "spiele das {preference} [in {area}]"
+  SoundboxSave:
+    data:
+      - sentences:
+          - "speichere (diesen | den aktuellen) song [in {area}]"
+lists:
+  query:
+    wildcard: true
+  preference:
+    values:
+      - in: "öfter"
+        out: "more"
+      - in: "weniger"
+        out: "less"

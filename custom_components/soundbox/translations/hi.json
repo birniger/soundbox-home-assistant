@@ -1,0 +1,16 @@
+{
+  "title": "Soundbox",
+  "config": {
+    "step": {
+      "pick_implementation": {
+        "title": "Soundbox जोड़ें"
+      }
+    },
+    "abort": {
+      "already_configured": "यह Soundbox खाता पहले से जुड़ा है।",
+      "oauth_error": "Soundbox इस जुड़ाव की पुष्टि नहीं कर सका। दोबारा कोशिश कीजिए।",
+      "reauth_successful": "Soundbox दोबारा जुड़ गया।",
+      "wrong_account": "यहाँ पहले से जुड़े Soundbox खाते से साइन इन कीजिए।"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Soundbox",
+  "content_in_root": false,
+  "homeassistant": "2026.3.0",
+  "render_readme": true
+}

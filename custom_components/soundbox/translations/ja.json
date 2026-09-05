@@ -1,0 +1,16 @@
+{
+  "title": "Soundbox",
+  "config": {
+    "step": {
+      "pick_implementation": {
+        "title": "Soundbox を接続"
+      }
+    },
+    "abort": {
+      "already_configured": "この Soundbox アカウントはすでに接続されています。",
+      "oauth_error": "Soundbox はこの接続を確認できませんでした。もう一度お試しください。",
+      "reauth_successful": "Soundbox を再接続しました。",
+      "wrong_account": "ここにすでに接続されている Soundbox アカウントでサインインしてください。"
+    }
+  }
+}

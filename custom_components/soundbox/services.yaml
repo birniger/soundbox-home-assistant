@@ -1,0 +1,56 @@
+play:
+  name: Play Soundbox
+  description: Play a saved station or a Soundbox radio mode on a media player.
+  fields:
+    entity_id:
+      required: true
+      selector: {entity: {domain: media_player}}
+    station_id:
+      selector: {text: {}}
+    mode:
+      selector: {select: {options: [smart, morning, night, local, favorites, ordered, discovery]}}
+    config_entry_id:
+      description: Choose an account only when more than one Soundbox account is connected.
+      selector: {text: {}}
+feedback:
+  name: Rate current Soundbox station
+  fields:
+    entity_id:
+      required: true
+      selector: {entity: {domain: media_player}}
+    value:
+      required: true
+      selector: {select: {options: [more, less]}}
+    config_entry_id:
+      description: Choose an account only when more than one Soundbox account is connected.
+      selector: {text: {}}
+next:
+  name: Next Soundbox station
+  description: Choose the next station for the Soundbox session on a media player.
+  fields:
+    entity_id:
+      required: true
+      selector: {entity: {domain: media_player}}
+    config_entry_id:
+      description: Choose an account only when more than one Soundbox account is connected.
+      selector: {text: {}}
+previous:
+  name: Previous Soundbox station
+  description: Choose the previous station for the Soundbox session on a media player.
+  fields:
+    entity_id:
+      required: true
+      selector: {entity: {domain: media_player}}
+    config_entry_id:
+      description: Choose an account only when more than one Soundbox account is connected.
+      selector: {text: {}}
+save_song:
+  name: Save current Soundbox song
+  description: Identify and save the song playing from the Soundbox session on a media player.
+  fields:
+    entity_id:
+      required: true
+      selector: {entity: {domain: media_player}}
+    config_entry_id:
+      description: Choose an account only when more than one Soundbox account is connected.
+      selector: {text: {}}
