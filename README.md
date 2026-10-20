@@ -6,12 +6,13 @@ pretends to be a speaker itself.
 
 ## What it does
 
-- Browse your stations from **Media** in the Home Assistant sidebar, and play
-  any of them on any media player. Soundbox appears as a media source, so
-  the speaker fetches the stream itself.
-- Browse saved stations, favourites, tags, cities, and Soundbox radio modes.
+- Browse a flat list of playable saved stations across all connected accounts
+  from **Media** in the Home Assistant sidebar, and play any of them on any
+  media player. Soundbox appears as a media source, so the speaker fetches the
+  stream itself.
 - Play a named station or Smart, Morning, Night, Local, Favorites, Ordered, or
-  Explore Radio on any Home Assistant media player.
+  Explore Radio on any Home Assistant media player through the `soundbox.play`
+  action or Assist.
 - Keep separate Soundbox sessions for separate rooms, so Next, More/Less, and
   Save Song act on the right speaker.
 - Use Home Assistant Assist actions, including play, next, previous, more/less,
@@ -49,9 +50,9 @@ Soundbox station in the kitchen”, “play this more”, and “save this song�
 
 ## Privacy
 
-Soundbox receives a random session identifier, station choices, and optional
-playback timing. It does not receive Home Assistant room names, speaker names,
-or home state. Station source URLs are never returned to Home Assistant.
+Soundbox receives a random session identifier and station choices. It does not
+receive Home Assistant room names, speaker names, or home state. Station source
+URLs are never returned to Home Assistant.
 
 ## Development
 
