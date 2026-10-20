@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 — Unreleased
+## 0.2.0 — 2026-10-20
 
 - Add Media browser folders for all stations, favourites, tags, cities, and
   radio modes, with separate folders for multiple connected accounts.
