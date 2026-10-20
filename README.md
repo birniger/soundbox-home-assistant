@@ -138,7 +138,7 @@ settings to revoke the account connection. HACS can then uninstall the files.
 
 ## Development
 
-Tests run against a real Home Assistant using
+Tests run against Home Assistant core using
 [`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component):
 
 ```bash
@@ -146,6 +146,11 @@ python3.14 -m venv .venv
 .venv/bin/pip install -r requirements_test.txt
 .venv/bin/pytest tests -q --cov=custom_components.soundbox
 ```
+
+The suite uses real Home Assistant setup, OAuth flows, media-source resolution,
+actions and state-change handling, with mocked Soundbox responses and simulated
+speaker states. Physical speakers have not been tested; compatibility depends
+on the selected player's stream support and state/media-ID reporting.
 
 The config flow is covered end to end, which is what the Home Assistant quality
 scale asks for at Bronze; `custom_components/soundbox/quality_scale.yaml`
