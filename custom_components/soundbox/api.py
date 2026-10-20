@@ -1,4 +1,5 @@
 """Narrow OAuth-aware client for Soundbox's Home Assistant API."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -76,7 +77,14 @@ class SoundboxApi:
 
     async def feedback(self, session_id: str, value: str) -> None:
         await self.request(
-            "POST", f"/home-assistant/v1/session/{session_id}/feedback", {"value": value}
+            "POST",
+            f"/home-assistant/v1/session/{session_id}/feedback",
+            {"value": value},
+        )
+
+    async def listen(self, session_id: str, event: dict[str, Any]) -> None:
+        await self.request(
+            "POST", f"/home-assistant/v1/session/{session_id}/listen", event
         )
 
     async def save_song(self, station_id: str) -> dict[str, Any]:

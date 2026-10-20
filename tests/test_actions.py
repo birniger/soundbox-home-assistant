@@ -5,6 +5,7 @@ the block that plays had been pasted into `_save_song` — where it referenced
 names that do not exist there, so saving a song raised NameError after the song
 had already been saved. Both are one edit apart, so both are tested here.
 """
+
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -25,6 +26,10 @@ async def _play_first(hass, aioclient_mock):
     await hass.services.async_call(
         DOMAIN, "play", {"entity_id": SPEAKER, "station_id": "s1"}, blocking=True
     )
+    hass.states.async_set(
+        SPEAKER, "playing", {"media_content_id": f"{API[:-4]}/listen/k1"}
+    )
+    await hass.async_block_till_done()
     return calls
 
 
@@ -50,7 +55,9 @@ async def test_next_actually_plays_what_it_picked(
     )
     aioclient_mock.post(f"{API}/radio/pick", json={"station": {"id": "s2"}})
 
-    await hass.services.async_call(DOMAIN, "next", {"entity_id": SPEAKER}, blocking=True)
+    await hass.services.async_call(
+        DOMAIN, "next", {"entity_id": SPEAKER}, blocking=True
+    )
 
     # Two plays now, and the second one is the station Next chose. Before the
     # fix there was exactly one, and pressing Next changed nothing at all.

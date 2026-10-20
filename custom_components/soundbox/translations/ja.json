@@ -12,5 +12,18 @@
       "reauth_successful": "Soundbox を再接続しました。",
       "wrong_account": "ここにすでに接続されている Soundbox アカウントでサインインしてください。"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "再生履歴",
+        "data": {
+          "share_listening": "再生履歴を共有する"
+        },
+        "data_description": {
+          "share_listening": "ラジオの学習を改善するため、局ID、ラジオモード、再生イベント、推定再生秒数をSoundboxに送信します。初期設定では無効です。部屋とスピーカーの名前はHome Assistant内に保存されます。"
+        }
+      }
+    }
   }
 }

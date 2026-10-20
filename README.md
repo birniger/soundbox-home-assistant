@@ -6,17 +6,18 @@ pretends to be a speaker itself.
 
 ## What it does
 
-- Browse a flat list of playable saved stations across all connected accounts
-  from **Media** in the Home Assistant sidebar, and play any of them on any
-  media player. Soundbox appears as a media source, so the speaker fetches the
-  stream itself.
+- Browse **All Stations**, **Favourites**, **Tags**, **Cities**, and **Radio
+  Modes** from **Media** in the Home Assistant sidebar. Multiple connected
+  accounts have separate folders. Choose a station or mode and a media player;
+  the speaker fetches the stream itself.
 - Play a named station or Smart, Morning, Night, Local, Favorites, Ordered, or
-  Explore Radio on any Home Assistant media player through the `soundbox.play`
-  action or Assist.
+  Explore Radio through Media, the `soundbox.play` action, or Assist.
 - Keep separate Soundbox sessions for separate rooms, so Next, More/Less, and
   Save Song act on the right speaker.
 - Use Home Assistant Assist actions, including play, next, previous, more/less,
   and save-song. A ready-made English and German sentence pack is included.
+- Choose whether to share listening activity to improve the same mode-specific
+  learning used by Alexa and Soundbox's website. This is off by default.
 
 ## Requirements
 
@@ -35,6 +36,66 @@ restart Home Assistant, then choose **Settings → Devices & services → Add
 integration → Soundbox**. You sign in once at Soundbox; there is no API key
 to copy and nothing to paste.
 
+## Playback and actions
+
+Starting a station or radio mode through Media, `soundbox.play`, or Assist
+creates a session for the selected speaker. Next, Previous, More/Less and Save
+Song use that session. Next and Previous stay in the selected radio mode;
+after a direct station selection they follow station-bank order, as on Alexa.
+Use Soundbox's actions or Assist commands for this navigation. A speaker's own
+transport buttons depend on its media player integration.
+More/Less teaches the current adaptive mode and the active Morning or Night
+time profile. If neither applies, it teaches Smart Radio. It does not change
+the station's manual preference setting or favourite membership.
+
+| Action | Data |
+| --- | --- |
+| `soundbox.play` | `entity_id` and either `station_id` or `mode` |
+| `soundbox.next`, `soundbox.previous` | `entity_id` |
+| `soundbox.feedback` | `entity_id` and `value: more` or `value: less` |
+| `soundbox.save_song` | `entity_id` |
+
+For example, an automation can start Smart Radio with:
+
+```yaml
+action: soundbox.play
+data:
+  entity_id: media_player.kitchen
+  mode: smart
+```
+
+Mode IDs are `smart`, `morning`, `night`, `local`, `favorites`, `ordered`, and
+`discovery` (Explore Radio). When multiple accounts are connected, actions also
+accept `config_entry_id`; Assist requires exactly one connected account.
+
+Speaker controls become available when the selected player reports playback.
+Stopping playback, changing to other audio when the player exposes its media
+ID, or unloading the integration ends the local session. After a Home
+Assistant restart, start playback through Soundbox again. Playback in a browser
+without a selected Home Assistant media player has no speaker session.
+
+## Listening activity
+
+Open **Settings → Devices & services → Soundbox → Configure** and enable
+**Share listening activity** for each account you want to contribute listening
+data. Enabling or disabling this option reloads the integration; start playback
+through Soundbox again afterwards.
+
+When enabled, Soundbox receives playback start, resume, pause, progress, end and
+skip events with estimated seconds spent in the player's `playing` state.
+Progress is reported every five minutes while playing. Paused time is excluded,
+and cumulative reports are counted incrementally rather than added repeatedly.
+The estimates depend on the player's state and media ID reporting; they do not
+measure whether sound was audible. Unavailable players end tracking. Plays
+started outside Soundbox are not tracked. Reports are best effort: outages,
+restarts or incomplete player state reporting can leave gaps.
+
+These reports teach the selected adaptive mode and the active Morning or Night
+profile. Direct and Ordered playback can teach the time profile but do not
+create a Direct or Ordered learned preference. Explicit More/Less feedback
+works with listening activity sharing disabled. Soundbox's account-wide
+learning switch also prevents automatic learning from these reports.
+
 ## Assist voice phrases
 
 Home Assistant deliberately keeps custom sentence grammars in its own
@@ -50,9 +111,30 @@ Soundbox station in the kitchen”, “play this more”, and “save this song�
 
 ## Privacy
 
-Soundbox receives a random session identifier and station choices. It does not
-receive Home Assistant room names, speaker names, or home state. Station source
-URLs are never returned to Home Assistant.
+Normal operation sends Soundbox authentication requests, random session
+identifiers, station and radio-mode selections, and any More/Less or Save Song
+requests you make. The mapping from those sessions to speakers stays in Home
+Assistant. Station source URLs are not returned to Home Assistant; players use
+Soundbox's HTTPS playback URLs.
+
+**Share listening activity is off by default.** When you enable it, the
+integration additionally sends random playback identifiers, event sequence
+numbers, station IDs, radio-mode IDs, playback events, and estimated listening
+seconds, as described above. Disabling it stops further listening reports; it
+does not erase learning already stored in your Soundbox account. You can reset
+stored learning in Soundbox's website. Temporary playback deduplication records
+expire after 30 days and are removed by Soundbox's daily cleanup; deleting the
+Soundbox account also removes them.
+
+Room names, speaker names, entity IDs and unrelated Home Assistant state are
+never included in these requests. The integration does not record or upload
+microphone audio. Save Song asks Soundbox to identify the station's stream.
+
+## Removal
+
+Remove the Soundbox entry from **Settings → Devices & services** to stop its
+local sessions and listeners. Disconnect Home Assistant in Soundbox's website
+settings to revoke the account connection. HACS can then uninstall the files.
 
 ## Development
 

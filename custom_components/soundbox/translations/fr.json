@@ -12,5 +12,18 @@
       "reauth_successful": "Soundbox est de nouveau connecté.",
       "wrong_account": "Connecte-toi avec le compte Soundbox déjà relié ici."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Activité d’écoute",
+        "data": {
+          "share_listening": "Partager l’activité d’écoute"
+        },
+        "data_description": {
+          "share_listening": "Envoyer à Soundbox les identifiants des stations, modes radio, événements et secondes d’écoute estimées pour améliorer l’apprentissage. Désactivé par défaut. Les noms des pièces et enceintes restent dans Home Assistant."
+        }
+      }
+    }
   }
 }

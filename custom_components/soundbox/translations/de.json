@@ -12,5 +12,18 @@
       "reauth_successful": "Soundbox ist wieder verbunden.",
       "wrong_account": "Melde dich mit dem Soundbox-Konto an, das hier schon verbunden ist."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Höraktivität",
+        "data": {
+          "share_listening": "Höraktivität teilen"
+        },
+        "data_description": {
+          "share_listening": "Stations-IDs, Radiomodi, Wiedergabeereignisse und geschätzte Hördauer in Sekunden an Soundbox senden, um die Radioauswahl zu verbessern. Standardmässig aus. Raum- und Lautsprechernamen bleiben in Home Assistant."
+        }
+      }
+    }
   }
 }

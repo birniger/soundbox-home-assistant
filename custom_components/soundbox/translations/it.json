@@ -12,5 +12,18 @@
       "reauth_successful": "Soundbox è stato ricollegato.",
       "wrong_account": "Accedi con l'account Soundbox già collegato qui."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Attività di ascolto",
+        "data": {
+          "share_listening": "Condividi attività di ascolto"
+        },
+        "data_description": {
+          "share_listening": "Invia a Soundbox gli identificativi delle stazioni, le modalità radio, gli eventi e i secondi stimati di ascolto per migliorare le scelte. Disattivato per impostazione predefinita. I nomi di stanze e altoparlanti restano in Home Assistant."
+        }
+      }
+    }
   }
 }

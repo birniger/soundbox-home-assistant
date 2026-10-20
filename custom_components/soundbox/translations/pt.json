@@ -12,5 +12,18 @@
       "reauth_successful": "O Soundbox foi reconectado.",
       "wrong_account": "Entre com a conta Soundbox que já está conectada aqui."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Atividade de escuta",
+        "data": {
+          "share_listening": "Partilhar atividade de escuta"
+        },
+        "data_description": {
+          "share_listening": "Enviar ao Soundbox identificadores de estações, modos de rádio, eventos e segundos estimados de escuta para melhorar a aprendizagem. Desativado por predefinição. Os nomes das divisões e colunas ficam no Home Assistant."
+        }
+      }
+    }
   }
 }

@@ -12,5 +12,18 @@
       "reauth_successful": "Soundbox has been reconnected.",
       "wrong_account": "Sign in with the Soundbox account already connected here."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Listening activity",
+        "data": {
+          "share_listening": "Share listening activity"
+        },
+        "data_description": {
+          "share_listening": "Send station IDs, radio modes, playback events and estimated listening seconds to Soundbox to improve radio learning. Off by default. Room and speaker names stay in Home Assistant."
+        }
+      }
+    }
   }
 }

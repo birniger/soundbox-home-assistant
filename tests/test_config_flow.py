@@ -1,4 +1,5 @@
 """The whole sign-in flow, which is the one thing every install goes through."""
+
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
@@ -60,12 +61,19 @@ async def _run_flow(
     await _authorize(hass, hass_client_no_auth, result["flow_id"])
     aioclient_mock.post(
         TOKEN_URL,
-        json={"refresh_token": "r", "access_token": "a", "type": "Bearer", "expires_in": 60},
+        json={
+            "refresh_token": "r",
+            "access_token": "a",
+            "type": "Bearer",
+            "expires_in": 60,
+        },
     )
     aioclient_mock.get(
         ACCOUNT_URL,
         status=account_status,
-        json=account if account is not None else {"id": "acct-1", "displayName": "Basil"},
+        json=account
+        if account is not None
+        else {"id": "acct-1", "displayName": "Basil"},
     )
     return await hass.config_entries.flow.async_configure(result["flow_id"])
 
@@ -73,7 +81,9 @@ async def _run_flow(
 async def test_full_flow_creates_an_entry_keyed_to_the_account(
     hass: HomeAssistant, hass_client_no_auth, aioclient_mock, current_request_with_host
 ) -> None:
-    result = await _run_flow(hass, hass_client_no_auth, aioclient_mock, current_request_with_host)
+    result = await _run_flow(
+        hass, hass_client_no_auth, aioclient_mock, current_request_with_host
+    )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Soundbox"
     entry = hass.config_entries.async_entries(DOMAIN)[0]
@@ -110,7 +120,11 @@ async def test_unreachable_account_aborts_rather_than_saving_a_token(
     hass: HomeAssistant, hass_client_no_auth, aioclient_mock, current_request_with_host
 ) -> None:
     result = await _run_flow(
-        hass, hass_client_no_auth, aioclient_mock, current_request_with_host, account_status=500
+        hass,
+        hass_client_no_auth,
+        aioclient_mock,
+        current_request_with_host,
+        account_status=500,
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "oauth_error"
@@ -123,7 +137,9 @@ async def test_same_account_twice_is_refused(
     MockConfigEntry(
         domain=DOMAIN, unique_id="acct-1", data={"auth_implementation": DOMAIN}
     ).add_to_hass(hass)
-    result = await _run_flow(hass, hass_client_no_auth, aioclient_mock, current_request_with_host)
+    result = await _run_flow(
+        hass, hass_client_no_auth, aioclient_mock, current_request_with_host
+    )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
 
@@ -180,3 +196,20 @@ async def test_reauth_with_a_different_account_is_refused(
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "wrong_account"
     assert entry.data["token"]["access_token"] == "stale"
+
+
+async def test_listening_option_requires_an_explicit_choice(hass, aioclient_mock):
+    from custom_components.soundbox.const import CONF_SHARE_LISTENING
+
+    from .conftest_helpers import connect
+
+    entry = await connect(hass, aioclient_mock)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["data_schema"]({}) == {CONF_SHARE_LISTENING: False}
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={CONF_SHARE_LISTENING: True}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options[CONF_SHARE_LISTENING] is True
+    await hass.async_block_till_done()

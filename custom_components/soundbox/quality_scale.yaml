@@ -4,8 +4,8 @@ rules:
   appropriate-polling:
     status: exempt
     comment: |
-      Nothing is polled. Soundbox answers an action or an Assist sentence and
-      is otherwise silent.
+      No library polling. Player state is observed locally; an explicit opt-in
+      enables cumulative listening reports every five minutes while playing.
   brands: done
   common-modules:
     status: exempt

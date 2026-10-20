@@ -1,14 +1,18 @@
 """OAuth setup for Soundbox."""
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import voluptuous as vol
+from homeassistant import config_entries
+from homeassistant.core import callback
 from homeassistant.helpers import config_entry_oauth2_flow
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import SoundboxApiError, account_for_access_token
-from .const import DOMAIN
+from .const import CONF_SHARE_LISTENING, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,6 +21,13 @@ class SoundboxFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, domain=DO
     """Let Home Assistant own the OAuth redirect and keep the refresh lifecycle."""
 
     DOMAIN = DOMAIN
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> SoundboxOptionsFlow:
+        return SoundboxOptionsFlow()
 
     @property
     def logger(self) -> logging.Logger:
@@ -47,3 +58,26 @@ class SoundboxFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, domain=DO
             return self.async_abort(reason="reauth_successful")
         self._abort_if_unique_id_configured()
         return self.async_create_entry(title="Soundbox", data=data)
+
+
+class SoundboxOptionsFlow(config_entries.OptionsFlowWithReload):
+    """Listening reports require an explicit choice for each account."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_SHARE_LISTENING,
+                        default=self.config_entry.options.get(
+                            CONF_SHARE_LISTENING, False
+                        ),
+                    ): bool,
+                }
+            ),
+        )

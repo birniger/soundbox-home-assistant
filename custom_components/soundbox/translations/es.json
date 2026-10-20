@@ -12,5 +12,18 @@
       "reauth_successful": "Soundbox se ha vuelto a conectar.",
       "wrong_account": "Inicia sesión con la cuenta de Soundbox que ya está conectada aquí."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Actividad de escucha",
+        "data": {
+          "share_listening": "Compartir actividad de escucha"
+        },
+        "data_description": {
+          "share_listening": "Enviar a Soundbox los identificadores de emisoras, modos de radio, eventos y segundos estimados de escucha para mejorar el aprendizaje. Desactivado por defecto. Los nombres de salas y altavoces permanecen en Home Assistant."
+        }
+      }
+    }
   }
 }
